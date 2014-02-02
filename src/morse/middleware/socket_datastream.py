@@ -3,11 +3,7 @@ import socket
 import select
 import json
 import errno
-<<<<<<< HEAD
-from morse.core.datastream import Datastream
-=======
 from morse.core.datastream import DatastreamManager
->>>>>>> 8b261448ffbea6c0474c20842b8688412ff02703
 from morse.helpers.transformation import Transformation3d
 from morse.middleware import AbstractDatastream
 from morse.core import services
