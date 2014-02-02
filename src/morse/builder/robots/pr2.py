@@ -4,13 +4,13 @@ from morse.builder import *
 from morse.builder.sensors import *
 from morse.builder.actuators import *
 
-class BarePR2(Robot):
+class BarePR2(GroundRobot):
     """
     A PR2 model, without any sensor or actuator.
     """
     def __init__(self, name = None):
-        Robot.__init__(self, 'pr2', name)
-        self.properties(classpath = "morse.robots.pr2.PR2", \
+        GroundRobot.__init__(self, 'pr2', name)
+        self.properties(classpath = "morse.robots.pr2.PR2",
                         COLOR = "0.0, 0.0, 1.0")
 
     def set_color(self, color = (0.0, 0.0, 0.8)):
@@ -142,7 +142,7 @@ class LocalizedPR2(BasePR2):
 
     def add_interface(self, interface):
 
-        super(self.__class__, self).add_interface(interface)
+        BasePR2.add_interface(self, interface)
 
         if interface == "ros": 
             self.motion.add_stream("ros", topic="/cmd_vel")
@@ -198,7 +198,7 @@ class NavPR2(BasePR2):
 
     def add_interface(self, interface):
 
-        super(self.__class__, self).add_interface(interface)
+        BasePR2.add_interface(self, interface)
 
         if interface == "socket":
             pass

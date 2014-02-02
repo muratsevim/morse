@@ -44,7 +44,7 @@ class ViamPoster(AbstractDatastream):
 
             # viam expects first the left camera, then the right camera
             # Check the y difference between the two cameras
-            if (self.pos_cam[0][1] < self.pos_cam[1][1]):
+            if self.pos_cam[0][1] < self.pos_cam[1][1]:
                 self.cameras.reverse()
                 self.camera_order.reverse()
 
@@ -101,7 +101,7 @@ class ViamPoster(AbstractDatastream):
                         wrongly defined")
 
             # Don't create a poster if the camera is disabled
-            if image_data == None or not camera_instance.capturing:
+            if image_data is None or not camera_instance.capturing:
                 logger.debug("Camera '%s' not capturing. Exiting viam poster" % \
                         camera_instance.bge_object.name)
                 return
@@ -116,8 +116,8 @@ class ViamPoster(AbstractDatastream):
             camera_data.x = main_to_sensor.x
             camera_data.y = main_to_sensor.y
             camera_data.z = main_to_sensor.z
-            camera_data.yaw = main_to_sensor.yaw 
-            camera_data.pitch = main_to_sensor.pitch + math.pi # XXX WTF 
+            camera_data.yaw = main_to_sensor.yaw
+            camera_data.pitch = main_to_sensor.pitch
             camera_data.roll = main_to_sensor.roll
             camera_data.flipped = camera_instance.vertical_flip
 

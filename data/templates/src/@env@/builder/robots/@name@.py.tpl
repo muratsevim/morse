@@ -1,6 +1,6 @@
 from morse.builder import *
 
-class @classname@(Robot):
+class @classname@(GroundRobot):
     """
     A template robot model for @name@, with a motion controller and a pose sensor.
     """
@@ -24,6 +24,7 @@ class @classname@(Robot):
         # Optionally allow to move the robot with the keyboard
         if debug:
             keyboard = Keyboard()
+            keyboard.properties(ControlType = 'Position')
             self.append(keyboard)
 
         ###################################

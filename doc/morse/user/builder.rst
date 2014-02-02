@@ -98,14 +98,14 @@ where MORSE will be looking for components. The default place it looks in is
 ``$MORSE_ROOT/share/morse/data`` (typically ``/usr/local/share/morse/data``)
 
 An additional option is to place and aim the default camera, by using the methods
-:py:meth:`morse.builder.environment.Environment.aim_camera` and
-:py:meth:`morse.builder.environment.Environment.place_camera`.
+:py:meth:`morse.builder.environment.Environment.set_camera_rotation` and
+:py:meth:`morse.builder.environment.Environment.set_camera_location`.
 
 .. code-block:: python
 
     env = Environment('land-1/trees')
-    env.place_camera([-5.0, 5.0, 3.0])
-    env.aim_camera([1.0470, 0, -0.7854])
+    env.set_camera_location([-5.0, 5.0, 3.0])
+    env.set_camera_rotation([1.0470, 0, -0.7854])
 
 .. note::
     You can also edit a builder script directly in MORSE, by calling ``morse edit my_builder_script.py``.
@@ -139,7 +139,7 @@ You should see the ``ATRV`` at the center of the scene.
 
     Handling of loop in builder script is a bit complex. There is two possible
     solution to handle properly loop at the builder level. The first one is
-    to name explictly your robot such as:
+    to name explicitly your robot such as:
 
     .. code-block:: python
 
@@ -233,7 +233,7 @@ You can set the name of a component through the setter ``name``::
     mouse.name = "jerry"
 
 
-If you do not explicitely set the name of your components, MORSE name them
+If you do not explicitly set the name of your components, MORSE name them
 automatically (including the Blender objects representing your components)
 based on **the name of the variable used in your Builder script**.
 
@@ -286,6 +286,13 @@ outliner, you see that the hierarchy of objects looks like that:
     If name collisions occur anyway, Blender automatically adds an incremental
     suffix like ``.001``, ``.002``, etc.
 
+.. note::
+    If, for some reason, you want to deactivate the automatic renaming
+    feature, it is possible by specifying at the environment level:
+
+    .. code-block:: python
+
+        env = Environment('indoors-1/indoor-1', component_renaming = False)
 
 Component properties
 --------------------
@@ -311,6 +318,9 @@ video camera sensor, modify its properties like this:
 
 Middleware configuration
 ------------------------
+
+Datastream handlers
++++++++++++++++++++
 
 For usual sensors and actuators, configuring a middleware to access the
 component is as easy as::
@@ -338,6 +348,67 @@ the :doc:`compatibility matrix <integration>`.
     Configuration for standard sensors and actuators are defined in
     the module :py:mod:`morse.builder.data`.
 
+.. note::
+    Some middleware allows to configure the behaviour of each stream. Report
+    to the documentation of your specific middleware, in the part
+    "Configuration specificities" to know more about it.
+
+Service handlers
+++++++++++++++++
+
+To use :doc:`services <../dev/services>` of a sensor or an actuator, you
+should configure your builder script explicitly.  For example, to export the
+service of the actuator ``motion`` through the middleware ``socket``, you must
+write::
+
+    motion.add_service('socket')
+
+As for datastream handler, it is possible to configure one component to export
+its services through multiple middlewares. You simply need to call
+``add_service`` several times.
+
+.. warning::
+
+    Do the nature of some middlewares (in particular ROS or pocolibs), it is
+    sometimes not really useful to call the service directly as exposed by
+    Morse. You need to use an extra layer of adaption called :doc:`overlays
+    <overlays>` and configure it through the ``add_overlay`` method.
+
+Related methods
++++++++++++++++
+
+The method ``add_interface`` allows to configure both datastream and service
+handling for one component. So::
+
+    motion.add_stream('socket')
+    motion.add_service('socket')
+
+is equivalent to::
+
+    motion.add_inteface('socket')
+
+Last, the method ``add_default_interface`` configures the default interface
+for each sensor / actuator owned by a robot. If an interface is configured for
+one sensor, it is used, otherwise the default  one is used. In the following
+example
+
+.. code-block:: python
+
+    robot = ATRV()
+
+    pose = Pose()
+    robot.append(pose)
+    pose.add_interface('socket')
+
+    motion = MotionVW()
+    robot.append(motion)
+
+    robot.add_default_interface('ros')
+
+``robot.pose`` will be exported through the socket interface, while
+``robot.motion`` will be exported through ROS.
+
+
 Adding modifiers
 ----------------
 
@@ -356,3 +427,22 @@ your builder script::
 
 	pose.alter('Noise', pos_std=0.3)
  
+
+.. _define_new_zone:
+
+Adding a zone
+-------------
+
+A zone is a 3d zone, more precisely a rectangular parallelepiped. It is
+possible to attach specific properties to each zone, in particular its name
+and its type. In the simulator, different behaviours can be implemented. At
+the moment, the only Morse component using the concept of zone is the
+:doc:`battery <sensors/battery>`.
+
+To add a zone of type ``Charging`` in a scenario, just add the following lines
+to your builder script::
+
+    charging_zone_1 = Zone(type = 'Charging')
+    # Change its size and move it around (10.0, 0.0, 2.0)
+    charging_zone_1.size = [5.0, 5.0, 5.0]
+    charging_zone_1.translate(x = 10.0, z = 2.0)

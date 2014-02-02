@@ -154,8 +154,9 @@ class AbstractComponent(object):
                     # do automatic renaming only if a name is not already manually set
                     # component.name accessor set both basename and bpy.name,
                     # which is the correct behaviour here. The bpy_name may be
-                    # rewritten by _rename_tree, to get the correct hierarcy.
-                    if not component.basename: 
+                    # rewritten by _rename_tree, to get the correct hierarchy.
+                    if not component.basename:
+                        Configuration.update_name(component.name, name)
                         component.name = name
 
         finally:
@@ -359,7 +360,7 @@ class AbstractComponent(object):
 
                         # iterate over levels to find the one with the default flag
                         for key, value in klass._levels.items():
-                            if value[2] == True:
+                            if value[2]:
                                 level = key
                                 # set the right default level
                                 self.properties(abstraction_level = level)
@@ -485,7 +486,7 @@ class AbstractComponent(object):
         self.properties(abstraction_level = level)
 
     def frequency(self, frequency=None, delay=0):
-        """ Set the frequency delay for the call of the Python module
+        """ Set the frequency of the Python module
 
         :param frequency: (int) Desired frequency,
             0 < frequency < logic tics
@@ -563,18 +564,29 @@ class AbstractComponent(object):
         MORSE_COMPONENTS/``self._category``/``component``.blend/Object/
         or in: MORSE_RESOURCE_PATH/``component``/Object/
 
+        If `component` is not set (neither as argument of `append_meshes` nor
+        through the :py:class:`AbstractComponent` constructor), a Blender
+        `Empty` is created instead.
+
         :param objects: list of the objects names to append
         :param component: component in which the objects are located
         :param prefix: filter the objects names to append (used by PassiveObject)
         :return: list of the imported (selected) Blender objects
         """
-        if not component:
-            component = self._blender_filename
+
+
+        component = component or self._blender_filename
+
+        if not component: # no Blender resource: simply create an empty
+            bpymorse.deselect_all()
+            bpymorse.add_morse_empty()
+            return [bpymorse.get_first_selected_object(),]
+
 
         if component.endswith('.blend'):
             filepath = os.path.abspath(component) # external blend file
         else:
-            filepath = os.path.join(MORSE_COMPONENTS, self._category, \
+            filepath = os.path.join(MORSE_COMPONENTS, self._category,
                                     component + '.blend')
 
         looked_dirs = [filepath]
@@ -627,14 +639,14 @@ class AbstractComponent(object):
         if component.endswith('.dae'):
             filepath = os.path.abspath(component) # external blend file
         else:
-            filepath = os.path.join(MORSE_COMPONENTS, self._category, \
+            filepath = os.path.join(MORSE_COMPONENTS, self._category,
                                     component + '.dae')
 
         if not os.path.exists(filepath):
             logger.error("Collada file %s for external asset import can" \
                          "not be found.\nEither provide an absolute path, or" \
                          "a path relative to MORSE assets directory (typically"\
-                         "$PREFIX/share/morse/data)" % (filepath))
+                         "$PREFIX/share/morse/data)" % filepath)
             return
 
         # Save a list of objects names before importing Collada

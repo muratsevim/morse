@@ -3,7 +3,11 @@ import socket
 import select
 import json
 import errno
+<<<<<<< HEAD
 from morse.core.datastream import Datastream
+=======
+from morse.core.datastream import DatastreamManager
+>>>>>>> 8b261448ffbea6c0474c20842b8688412ff02703
 from morse.helpers.transformation import Transformation3d
 from morse.middleware import AbstractDatastream
 from morse.core import services
@@ -22,7 +26,8 @@ class MorseEncoder(json.JSONEncoder):
         if isinstance(obj, mathutils.Vector):
             return obj[:]
         if isinstance(obj, mathutils.Matrix):
-            return obj[:][:]
+            # obj[:][:] gives list(mathutils.Vector)
+            return [list(vec) for vec in obj]
         if isinstance(obj, mathutils.Quaternion):
             return {'x' : obj.x, 'y': obj.y, 'z': obj.z, 'w': obj.w }
         if isinstance(obj, mathutils.Euler):
@@ -58,8 +63,9 @@ class SocketServ(AbstractDatastream):
             try:
                 logger.info("Shutting down connections to server...")
                 self._server.shutdown(socket.SHUT_RDWR)
-            except OSError as e:
-                if e.errno != errno.ENOTCONN:  #ignore exception raised on OSX for closed sockets 
+            except socket.error as err_info:
+                # ignore exception raised on OSX for closed sockets
+                if err_info.errno != errno.ENOTCONN:
                     raise
             logger.info("Closing socket server...")
             self._server.close()
@@ -92,7 +98,7 @@ class SocketPublisher(SocketServ):
             sock, _ = self._server.accept()
             self._client_sockets.append(sock)
 
-        if outputready != []:
+        if outputready:
             message = self.encode()
             for o in outputready:
                 try:
@@ -121,7 +127,7 @@ class SocketReader(SocketServ):
             if i == self._server:
                 sock, addr = self._server.accept()
                 logger.debug("New client connected to %s datastream" % self.component_name)
-                if self._client_sockets != []:
+                if self._client_sockets:
                     logger.warning("More than one client trying to write on %s datastream!!" % self.component_name)
                 self._client_sockets.append(sock)
             else:
@@ -153,13 +159,13 @@ class SocketReader(SocketServ):
         return json.loads(msg)
 
 
-class Socket(Datastream):
+class SocketDatastreamManager(DatastreamManager):
     """ External communication using sockets. """
 
     def __init__(self):
         """ Initialize the socket connections """
         # Call the constructor of the parent class
-        super(self.__class__, self).__init__()
+        DatastreamManager.__init__(self)
 
         # port -> MorseSocketServ
         self._server_dict = {}
@@ -203,11 +209,22 @@ class Socket(Datastream):
     def register_component(self, component_name, component_instance, mw_data):
         """ Open the port used to communicate by the specified component.
         """
-        # Create a socket server for this component
-        serv = Datastream.register_component(self, component_name,
-                                         component_instance, mw_data)
-
         global BASE_PORT
+
+        register_success = False
+
+        while not register_success:
+            try:
+                # Create a socket server for this component
+                serv = DatastreamManager.register_component(self, component_name,
+                                                 component_instance, mw_data)
+                register_success = True
+            except socket.error as error_info:
+                if error_info.errno ==  errno.EADDRINUSE:
+                    BASE_PORT += 1
+                else:
+                    raise
+
         self._server_dict[BASE_PORT] = serv
         self._component_nameservice[component_name] = BASE_PORT
-        BASE_PORT = BASE_PORT + 1
+        BASE_PORT += 1

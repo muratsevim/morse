@@ -13,15 +13,14 @@ except ImportError:
     pass
 
 import sys
-import time
 from pymorse import Morse
 
-def send_speed(s, v=0, w=0, t=0):
+def send_speed(s, sim, v=0, w=0, t=0):
     s.publish({'v': v, 'w': w})
-    time.sleep(t)
+    sim.sleep(t)
     s.publish({'v': 0.0, 'w': 0.0})
 
-class FrictionTest(MorseTestCase):
+class CollisionTest(MorseTestCase):
     def setUpEnv(self):
         """ Defines the test scenario, using the Builder API. """
 
@@ -43,13 +42,13 @@ class FrictionTest(MorseTestCase):
 
         env = Environment('empty', fastmode = True)
 
-    def test_friction(self):
+    def test_collision(self):
         with Morse() as sim:
 
             collision = sim.robot.collision.get(timeout=0.1)
             self.assertEqual(collision, None)
 
-            send_speed(sim.robot.motion, 1.0, 0.0, 1.0)
+            send_speed(sim.robot.motion, sim, 1.0, 0.0, 1.0)
 
             collision = sim.robot.collision.get(timeout=0.1)
             self.assertNotEqual(collision, None)
@@ -58,4 +57,4 @@ class FrictionTest(MorseTestCase):
 ########################## Run these tests ##########################
 if __name__ == "__main__":
     from morse.testing.testing import main
-    main(FrictionTest)
+    main(CollisionTest)
